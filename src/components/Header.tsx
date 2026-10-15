@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import {
   Search,
   SlidersHorizontal,
@@ -21,6 +22,7 @@ import {
   User,
 } from 'lucide-react';
 import { TaskStatus, TaskPriority } from '@/services/tasks.service';
+import { useWorkspace } from '@/context/WorkspaceContext';
 
 export interface FieldVisibility {
   priority: boolean;
@@ -38,22 +40,47 @@ interface HeaderProps {
 }
 
 export default function Header({ onMenuClick }: HeaderProps) {
+  const { currentWorkspace } = useWorkspace();
+  const pathname = usePathname();
+
+  const getSectionName = () => {
+    if (pathname?.startsWith('/projects')) return 'Projects';
+    if (pathname?.startsWith('/team')) return 'Team members';
+    if (pathname?.startsWith('/notifications')) return 'Notifications';
+    if (pathname?.startsWith('/settings')) return 'Settings';
+    if (pathname?.startsWith('/profile')) return 'Profile';
+    return 'Tasks';
+  };
+
   return (
-    <header className="h-16 bg-white border-b border-gray-200 px-4 sm:px-6 flex items-center justify-between shrink-0 relative z-20">
-      {/* Left Header Toggle & Brand */}
-      <div className="flex items-center gap-3">
+    <header className="h-16 bg-white dark:bg-[#121215] border-b border-gray-200 dark:border-zinc-800 px-4 sm:px-6 flex items-center justify-between shrink-0 relative z-20">
+      {/* Left Header Toggle & Workspace Breadcrumbs */}
+      <div className="flex items-center gap-2.5 sm:gap-3">
         <button
           onClick={onMenuClick}
-          className="text-gray-600 hover:text-gray-900 cursor-pointer p-1.5 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center"
+          className="text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100 cursor-pointer p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center shrink-0"
           aria-label="Toggle menu"
           id="mobile-menu-btn"
         >
-          <Menu className="w-5 h-5 text-gray-800 md:hidden" />
-          <PanelLeft className="w-4.5 h-4.5 text-gray-600 hidden md:block" />
+          <Menu className="w-5 h-5 text-gray-800 dark:text-zinc-200 md:hidden" />
+          <PanelLeft className="w-4.5 h-4.5 text-gray-600 dark:text-zinc-400 hidden md:block" />
         </button>
-        <span className="font-bold text-sm tracking-tight text-gray-900 select-none">
-          Follow Up
-        </span>
+
+        {/* Breadcrumb Navigation */}
+        <div className="flex items-center gap-1.5 sm:gap-2 text-xs select-none">
+          <span className="font-bold text-sm tracking-tight text-gray-900 dark:text-white">
+            Follow Up
+          </span>
+          <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-zinc-600 shrink-0" />
+
+          {/* Active Workspace Pill */}
+          <div className="font-semibold text-gray-800 dark:text-zinc-200">
+            <span className="truncate max-w-[120px] sm:max-w-[200px]">{currentWorkspace?.name || 'Workspace'}</span>
+          </div>
+
+          <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-zinc-600 shrink-0 hidden sm:inline-block" />
+          <span className="text-gray-500 dark:text-zinc-400 font-medium hidden sm:inline-block">{getSectionName()}</span>
+        </div>
       </div>
     </header>
   );
@@ -95,8 +122,8 @@ export function HeaderActions({
   onFilterAssigneeChange,
   filterTag = '',
   onFilterTagChange,
-  membersList = ['Admin'],
-  tagsList = ['Deployment'],
+  membersList = [],
+  tagsList = [],
 }: HeaderActionsProps) {
   const [fieldsOpen, setFieldsOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -127,8 +154,8 @@ export function HeaderActions({
     { key: 'members', label: 'Members' },
     { key: 'dueDate', label: 'Due Date' },
     { key: 'labels', label: 'Labels' },
-    { key: 'status', label: 'Status' },
-    { key: 'reporter', label: 'Reporter' },
+    // { key: 'status', label: 'Status' },
+    // { key: 'reporter', label: 'Reporter' },
   ];
 
   const hasActiveFilter = !!(filterStatus || filterPriority || filterAssignee || filterTag);
@@ -171,13 +198,13 @@ export function HeaderActions({
   };
 
   const filterCategories = [
-    { key: 'Status', label: 'Status', icon: CircleDot },
+    // { key: 'Status', label: 'Status', icon: CircleDot },
     { key: 'Priority', label: 'Priority', icon: BarChart2 },
     { key: 'Members', label: 'Members', icon: Users },
     { key: 'Due Date', label: 'Due Date', icon: Calendar },
-    { key: 'Teams', label: 'Teams', icon: Users2 },
+    // { key: 'Teams', label: 'Teams', icon: Users2 },
     { key: 'Labels', label: 'Labels', icon: Tag },
-    { key: 'Reporter', label: 'Reporter', icon: User },
+    // { key: 'Reporter', label: 'Reporter', icon: User },
   ] as const;
 
   return (
@@ -190,7 +217,7 @@ export function HeaderActions({
           placeholder="Search..."
           value={searchValue}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-24 xs:w-32 sm:w-44 focus:w-36 sm:focus:w-56 transition-all text-xs border border-gray-200 rounded-lg py-1.5 pl-8 pr-2.5 bg-white text-gray-800 outline-none focus:border-gray-400"
+          className="w-24 xs:w-32 sm:w-44 focus:w-36 sm:focus:w-56 transition-all text-xs border border-gray-200 dark:border-zinc-800 rounded-lg py-1.5 pl-8 pr-2.5 bg-white dark:bg-zinc-900 text-gray-800 dark:text-zinc-100 placeholder:text-gray-400 outline-none focus:border-gray-400 dark:focus:border-zinc-600"
         />
         <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 pointer-events-none" />
       </div>
@@ -200,27 +227,27 @@ export function HeaderActions({
         <button
           type="button"
           onClick={() => setFieldsOpen((prev) => !prev)}
-          className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer ${
-            fieldsOpen ? 'border-gray-400 bg-gray-50' : ''
+          className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer ${
+            fieldsOpen ? 'border-gray-400 dark:border-zinc-600 bg-gray-50 dark:bg-zinc-800' : ''
           }`}
           id="fields-dropdown-btn"
         >
-          <SlidersHorizontal className="w-3.5 h-3.5 text-gray-500" />
+          <SlidersHorizontal className="w-3.5 h-3.5 text-gray-500 dark:text-zinc-400" />
           Fields
         </button>
 
         {/* Fields Dropdown Popup */}
         {fieldsOpen && (
-          <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl border border-gray-200 shadow-xl p-3 z-50 animate-in fade-in zoom-in-95 duration-100">
+          <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-xl p-3 z-50 animate-in fade-in zoom-in-95 duration-100">
             {/* Segmented Control: List | Board */}
-            <div className="bg-gray-100/90 p-1 rounded-xl flex items-center gap-1 mb-3">
+            <div className="bg-gray-100/90 dark:bg-zinc-800 p-1 rounded-xl flex items-center gap-1 mb-3">
               <button
                 type="button"
                 onClick={() => onViewModeChange('list')}
                 className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   viewMode === 'list'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-900'
+                    ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 <List className="w-4 h-4 stroke-[2.5]" />
@@ -231,8 +258,8 @@ export function HeaderActions({
                 onClick={() => onViewModeChange('board')}
                 className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   viewMode === 'board'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-900'
+                    ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 <LayoutGrid className="w-4 h-4 stroke-[2.5]" />
@@ -248,14 +275,14 @@ export function HeaderActions({
                   <div
                     key={item.key}
                     onClick={() => onToggleField(item.key)}
-                    className="flex items-center justify-between py-2 px-2.5 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors select-none"
+                    className="flex items-center justify-between py-2 px-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800/80 cursor-pointer transition-colors select-none"
                   >
-                    <span className="text-xs font-medium text-gray-800">
+                    <span className="text-xs font-medium text-gray-800 dark:text-zinc-200">
                       {item.label}
                     </span>
                     <div
                       className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${
-                        isChecked ? 'bg-black text-white' : 'bg-gray-200'
+                        isChecked ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-gray-200 dark:bg-zinc-700 text-transparent'
                       }`}
                     >
                       {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
@@ -273,30 +300,29 @@ export function HeaderActions({
         <button
           type="button"
           onClick={() => setFilterOpen((prev) => !prev)}
-          className={`p-2 text-gray-500 hover:bg-gray-100 rounded-lg border transition-colors cursor-pointer relative ${
+          className={`p-2 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg border transition-colors cursor-pointer relative ${
             filterOpen || hasActiveFilter
-              ? 'border-gray-900 bg-gray-100 text-gray-900'
-              : 'border-gray-200'
+              ? 'border-gray-900 dark:border-zinc-500 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white'
+              : 'border-gray-200 dark:border-zinc-800'
           }`}
           title="Filter tasks"
           id="filter-tasks-btn"
         >
           <Filter className="w-4 h-4" />
           {hasActiveFilter && (
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-indigo-600 rounded-full ring-2 ring-white" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-indigo-600 rounded-full ring-2 ring-white dark:ring-zinc-900" />
           )}
         </button>
 
         {/* Filter Popover Dropdowns */}
         {filterOpen && (
-          <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl border border-gray-200 shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 select-none">
+          <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 select-none">
             {/* Filter Main Categories List */}
             <div className="space-y-0.5">
               {filterCategories.map((cat) => {
                 const IconComponent = cat.icon;
                 const isActive = activeSubmenu === cat.label;
                 const isFiltered =
-                  (cat.label === 'Status' && filterStatus) ||
                   (cat.label === 'Priority' && filterPriority) ||
                   (cat.label === 'Members' && filterAssignee) ||
                   (cat.label === 'Labels' && filterTag);
@@ -307,11 +333,13 @@ export function HeaderActions({
                     onMouseEnter={() => setActiveSubmenu(cat.label as any)}
                     onClick={() => setActiveSubmenu(cat.label as any)}
                     className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium cursor-pointer transition-colors ${
-                      isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-700 hover:bg-gray-50'
+                      isActive
+                        ? 'bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white'
+                        : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800/60'
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <IconComponent className="w-4 h-4 text-gray-700 shrink-0" />
+                      <IconComponent className="w-4 h-4 text-gray-700 dark:text-zinc-300 shrink-0" />
                       <span>{cat.label}</span>
                       {isFiltered && (
                         <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full shrink-0" />
@@ -325,11 +353,11 @@ export function HeaderActions({
 
             {/* Clear Filters Row if active */}
             {hasActiveFilter && (
-              <div className="pt-1 mt-1 border-t border-gray-100">
+              <div className="pt-1 mt-1 border-t border-gray-100 dark:border-zinc-800">
                 <button
                   type="button"
                   onClick={handleClearFilters}
-                  className="w-full text-center py-1.5 text-xs text-red-600 font-semibold hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                  className="w-full text-center py-1.5 text-xs text-red-600 dark:text-red-400 font-semibold hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors cursor-pointer"
                 >
                   Clear all filters
                 </button>
@@ -338,8 +366,8 @@ export function HeaderActions({
 
             {/* Submenu Popover */}
             {activeSubmenu && (
-              <div className="absolute right-0 sm:right-full top-full sm:top-0 mt-1 sm:mt-0 sm:mr-2 w-48 bg-white rounded-2xl border border-gray-200 shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100 space-y-1">
-                <div className="text-[11px] font-semibold text-gray-400 px-2.5 py-1 uppercase tracking-wider">
+              <div className="absolute right-0 sm:right-full top-full sm:top-0 mt-1 sm:mt-0 sm:mr-2 w-48 bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100 space-y-1">
+                <div className="text-[11px] font-semibold text-gray-400 dark:text-zinc-500 px-2.5 py-1 uppercase tracking-wider">
                   {activeSubmenu}
                 </div>
 
@@ -353,27 +381,42 @@ export function HeaderActions({
                         setFilterOpen(false);
                         setActiveSubmenu(null);
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 flex items-center justify-between text-xs text-gray-700 font-medium cursor-pointer"
+                      className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center justify-between text-xs text-gray-700 dark:text-zinc-300 font-medium cursor-pointer"
+                    >
+                      <span>All Priorities</span>
+                      {!filterPriority && <Check className="w-3.5 h-3.5 text-gray-900 dark:text-white" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onFilterPriorityChange) onFilterPriorityChange('no-priority');
+                        setFilterOpen(false);
+                        setActiveSubmenu(null);
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center justify-between text-xs text-gray-700 dark:text-zinc-300 font-medium cursor-pointer"
                     >
                       <span className="flex items-center gap-2">
                         <span className="text-gray-400 font-bold">.</span> No Priority
                       </span>
-                      {!filterPriority && <Check className="w-3.5 h-3.5 text-gray-900" />}
+                      {(filterPriority === 'no-priority' || filterPriority === 'none') && (
+                        <Check className="w-3.5 h-3.5 text-gray-900 dark:text-white" />
+                      )}
                     </button>
 
                     <button
                       type="button"
                       onClick={() => {
-                        if (onFilterPriorityChange) onFilterPriorityChange('high');
+                        if (onFilterPriorityChange) onFilterPriorityChange('urgent');
                         setFilterOpen(false);
                         setActiveSubmenu(null);
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 flex items-center justify-between text-xs font-semibold text-pink-600 cursor-pointer"
+                      className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center justify-between text-xs font-semibold text-pink-600 dark:text-pink-400 cursor-pointer"
                     >
                       <span className="flex items-center gap-2">
                         {renderSignalBars('urgent')} Urgent
                       </span>
-                      {filterPriority === 'high' && <Check className="w-3.5 h-3.5 text-gray-900" />}
+                      {filterPriority === 'urgent' && <Check className="w-3.5 h-3.5 text-gray-900 dark:text-white" />}
                     </button>
 
                     <button
@@ -383,11 +426,12 @@ export function HeaderActions({
                         setFilterOpen(false);
                         setActiveSubmenu(null);
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 flex items-center justify-between text-xs font-medium text-pink-500 cursor-pointer"
+                      className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center justify-between text-xs font-medium text-pink-500 dark:text-pink-400 cursor-pointer"
                     >
                       <span className="flex items-center gap-2">
                         {renderSignalBars('high')} High
                       </span>
+                      {filterPriority === 'high' && <Check className="w-3.5 h-3.5 text-gray-900 dark:text-white" />}
                     </button>
 
                     <button
@@ -397,12 +441,12 @@ export function HeaderActions({
                         setFilterOpen(false);
                         setActiveSubmenu(null);
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 flex items-center justify-between text-xs font-medium text-amber-500 cursor-pointer"
+                      className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center justify-between text-xs font-medium text-amber-500 dark:text-amber-400 cursor-pointer"
                     >
                       <span className="flex items-center gap-2">
                         {renderSignalBars('medium')} Medium
                       </span>
-                      {filterPriority === 'medium' && <Check className="w-3.5 h-3.5 text-gray-900" />}
+                      {filterPriority === 'medium' && <Check className="w-3.5 h-3.5 text-gray-900 dark:text-white" />}
                     </button>
 
                     <button
@@ -412,12 +456,12 @@ export function HeaderActions({
                         setFilterOpen(false);
                         setActiveSubmenu(null);
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 flex items-center justify-between text-xs font-medium text-gray-400 cursor-pointer"
+                      className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center justify-between text-xs font-medium text-gray-400 dark:text-zinc-400 cursor-pointer"
                     >
                       <span className="flex items-center gap-2">
                         {renderSignalBars('low')} Low
                       </span>
-                      {filterPriority === 'low' && <Check className="w-3.5 h-3.5 text-gray-900" />}
+                      {filterPriority === 'low' && <Check className="w-3.5 h-3.5 text-gray-900 dark:text-white" />}
                     </button>
                   </>
                 )}
@@ -440,10 +484,10 @@ export function HeaderActions({
                           setFilterOpen(false);
                           setActiveSubmenu(null);
                         }}
-                        className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 flex items-center justify-between text-xs text-gray-700 font-medium cursor-pointer"
+                        className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center justify-between text-xs text-gray-700 dark:text-zinc-300 font-medium cursor-pointer"
                       >
                         <span>{item.label}</span>
-                        {filterStatus === item.val && <Check className="w-3.5 h-3.5 text-gray-900" />}
+                        {filterStatus === item.val && <Check className="w-3.5 h-3.5 text-gray-900 dark:text-white" />}
                       </button>
                     ))}
                   </>
@@ -459,10 +503,10 @@ export function HeaderActions({
                         setFilterOpen(false);
                         setActiveSubmenu(null);
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 flex items-center justify-between text-xs text-gray-700 font-medium cursor-pointer"
+                      className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center justify-between text-xs text-gray-700 dark:text-zinc-300 font-medium cursor-pointer"
                     >
                       <span>All Members</span>
-                      {!filterAssignee && <Check className="w-3.5 h-3.5 text-gray-900" />}
+                      {!filterAssignee && <Check className="w-3.5 h-3.5 text-gray-900 dark:text-white" />}
                     </button>
                     {membersList.map((mem) => (
                       <button
@@ -473,10 +517,10 @@ export function HeaderActions({
                           setFilterOpen(false);
                           setActiveSubmenu(null);
                         }}
-                        className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 flex items-center justify-between text-xs text-gray-700 font-medium cursor-pointer"
+                        className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center justify-between text-xs text-gray-700 dark:text-zinc-300 font-medium cursor-pointer"
                       >
                         <span>{mem}</span>
-                        {filterAssignee === mem && <Check className="w-3.5 h-3.5 text-gray-900" />}
+                        {filterAssignee === mem && <Check className="w-3.5 h-3.5 text-gray-900 dark:text-white" />}
                       </button>
                     ))}
                   </>
@@ -492,10 +536,10 @@ export function HeaderActions({
                         setFilterOpen(false);
                         setActiveSubmenu(null);
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 flex items-center justify-between text-xs text-gray-700 font-medium cursor-pointer"
+                      className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center justify-between text-xs text-gray-700 dark:text-zinc-300 font-medium cursor-pointer"
                     >
                       <span>All Labels</span>
-                      {!filterTag && <Check className="w-3.5 h-3.5 text-gray-900" />}
+                      {!filterTag && <Check className="w-3.5 h-3.5 text-gray-900 dark:text-white" />}
                     </button>
                     {tagsList.map((tag) => (
                       <button
@@ -506,10 +550,10 @@ export function HeaderActions({
                           setFilterOpen(false);
                           setActiveSubmenu(null);
                         }}
-                        className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 flex items-center justify-between text-xs text-gray-700 font-medium cursor-pointer"
+                        className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center justify-between text-xs text-gray-700 dark:text-zinc-300 font-medium cursor-pointer"
                       >
                         <span>{tag}</span>
-                        {filterTag === tag && <Check className="w-3.5 h-3.5 text-gray-900" />}
+                        {filterTag === tag && <Check className="w-3.5 h-3.5 text-gray-900 dark:text-white" />}
                       </button>
                     ))}
                   </>
@@ -526,10 +570,10 @@ export function HeaderActions({
                           setFilterOpen(false);
                           setActiveSubmenu(null);
                         }}
-                        className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 flex items-center justify-between text-xs text-gray-700 font-medium cursor-pointer"
+                        className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center justify-between text-xs text-gray-700 dark:text-zinc-300 font-medium cursor-pointer"
                       >
                         <span>{team}</span>
-                        {team === 'All Teams' && <Check className="w-3.5 h-3.5 text-gray-900" />}
+                        {team === 'All Teams' && <Check className="w-3.5 h-3.5 text-gray-900 dark:text-white" />}
                       </button>
                     ))}
                   </>
@@ -538,7 +582,7 @@ export function HeaderActions({
                 {/* Reporter Submenu Items */}
                 {activeSubmenu === 'Reporter' && (
                   <>
-                    {['All Reporters', 'Admin', 'Dexter'].map((rep) => (
+                    {['All Reporters', ...membersList].map((rep) => (
                       <button
                         key={rep}
                         type="button"
@@ -546,10 +590,10 @@ export function HeaderActions({
                           setFilterOpen(false);
                           setActiveSubmenu(null);
                         }}
-                        className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 flex items-center justify-between text-xs text-gray-700 font-medium cursor-pointer"
+                        className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center justify-between text-xs text-gray-700 dark:text-zinc-300 font-medium cursor-pointer"
                       >
                         <span>{rep}</span>
-                        {rep === 'All Reporters' && <Check className="w-3.5 h-3.5 text-gray-900" />}
+                        {rep === 'All Reporters' && <Check className="w-3.5 h-3.5 text-gray-900 dark:text-white" />}
                       </button>
                     ))}
                   </>
@@ -566,10 +610,10 @@ export function HeaderActions({
                           setFilterOpen(false);
                           setActiveSubmenu(null);
                         }}
-                        className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 flex items-center justify-between text-xs text-gray-700 font-medium cursor-pointer"
+                        className="w-full px-2.5 py-1.5 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center justify-between text-xs text-gray-700 dark:text-zinc-300 font-medium cursor-pointer"
                       >
                         <span>{dt}</span>
-                        {dt === 'All Dates' && <Check className="w-3.5 h-3.5 text-gray-900" />}
+                        {dt === 'All Dates' && <Check className="w-3.5 h-3.5 text-gray-900 dark:text-white" />}
                       </button>
                     ))}
                   </>
@@ -584,7 +628,7 @@ export function HeaderActions({
       <button
         onClick={onNewTask}
         id="create-task-header-btn"
-        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-lg hover:bg-black transition-colors shadow-sm cursor-pointer"
+        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white dark:text-black bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-zinc-200 rounded-lg transition-colors shadow-sm cursor-pointer"
       >
         <Plus className="w-3.5 h-3.5" />
         Add Task
