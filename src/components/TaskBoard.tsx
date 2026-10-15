@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { Task, TaskStatus } from '@/services/tasks.service';
+import { formatMemberName } from '@/services/members.service';
 import TaskCard from './TaskCard';
 import { FieldVisibility, ViewMode } from './Header';
 
@@ -94,9 +95,10 @@ export default function TaskBoard({
 
   // Format Date as DD Month (short form) YYYY e.g. 20 Aug 2026 (only showing end date if range)
   const formatDateShortYear = (dateStr?: string): string => {
-    if (!dateStr) return '—';
+    if (!dateStr) return '';
 
     let targetDateStr = dateStr.trim();
+    if (!targetDateStr) return '';
     if (targetDateStr.includes(' to ')) {
       const parts = targetDateStr.split(' to ');
       targetDateStr = (parts[1] || parts[0]).trim();
@@ -124,6 +126,18 @@ export default function TaskBoard({
   // Priority indicator renderer matching user design
   const renderPriority = (priority?: string) => {
     const p = priority || 'medium';
+    if (p === 'urgent') {
+      return (
+        <span className="flex items-center gap-1.5 text-pink-600 font-bold text-xs">
+          <span className="inline-flex gap-0.5 items-end h-3">
+            <span className="w-0.5 h-1.5 bg-pink-600 rounded-xs"></span>
+            <span className="w-0.5 h-2.5 bg-pink-600 rounded-xs"></span>
+            <span className="w-0.5 h-3.5 bg-pink-600 rounded-xs"></span>
+          </span>
+          Urgent
+        </span>
+      );
+    }
     if (p === 'high') {
       return (
         <span className="flex items-center gap-1.5 text-pink-500 font-medium text-xs">
@@ -145,6 +159,14 @@ export default function TaskBoard({
             <span className="w-0.5 h-3.5 bg-gray-300 rounded-xs"></span>
           </span>
           Medium
+        </span>
+      );
+    }
+    if (p === 'no-priority' || p === 'none') {
+      return (
+        <span className="flex items-center gap-1.5 text-gray-500 font-medium text-xs">
+          <span className="text-gray-400 font-bold leading-none">.</span>
+          No Priority
         </span>
       );
     }
@@ -174,22 +196,22 @@ export default function TaskBoard({
               <button
                 type="button"
                 onClick={() => toggleSection(column.id)}
-                className="flex items-center gap-1.5 text-xs font-bold text-gray-800 hover:text-gray-900 transition-colors cursor-pointer select-none"
+                className="flex items-center gap-1.5 text-xs font-bold text-gray-800 dark:text-zinc-200 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer select-none"
               >
                 {isCollapsed ? (
-                  <ChevronRight className="w-4 h-4 text-gray-500" />
+                  <ChevronRight className="w-4 h-4 text-gray-500 dark:text-zinc-400" />
                 ) : (
-                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                  <ChevronDown className="w-4 h-4 text-gray-500 dark:text-zinc-400" />
                 )}
                 <span>{column.title}</span>
               </button>
 
               {/* Table Card Box */}
               {!isCollapsed && (
-                <div className="bg-white border border-gray-200/90 rounded-sm overflow-x-auto shadow-xs">
+                <div className="bg-white dark:bg-zinc-900 border border-gray-200/90 dark:border-zinc-800 rounded-sm overflow-x-auto shadow-xs">
                   <div className="min-w-[600px]">
                     {/* Table Header Row */}
-                    <div className="bg-[#F5F5F5] border-b border-gray-200/80 px-4 py-2.5 text-xs font-semibold text-gray-600 flex items-center gap-3">
+                    <div className="bg-[#F5F5F5] dark:bg-zinc-800/70 border-b border-gray-200/80 dark:border-zinc-800 px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 flex items-center gap-3">
                       <div className="flex-1 min-w-[160px]">Task</div>
 
                       {fieldVisibility.priority && <div className="w-24 shrink-0">Priority</div>}
@@ -204,25 +226,24 @@ export default function TaskBoard({
 
                     {/* Table Rows */}
                     {columnTasks.length === 0 ? (
-                      <div className="px-4 py-3 text-xs text-gray-400 italic">
+                      <div className="px-4 py-3 text-xs text-gray-400 dark:text-zinc-500 italic">
                         No tasks in this list
                       </div>
                     ) : (
-                      <div className="divide-y divide-gray-100">
+                      <div className="divide-y divide-gray-100 dark:divide-zinc-800">
                         {columnTasks.map((task, index) => {
-                          const assigneeName = task.assignee || 'Admin';
-                          const avatarColor = task.avatarColor || 'bg-indigo-600';
+                          const assigneeName = task.assignee || 'Unassigned';
+                          const avatarColor = task.assignee ? task.avatarColor || 'bg-indigo-600' : 'bg-gray-400';
                           const initial = assigneeName.charAt(0).toUpperCase();
-                          const isNearBottom = index >= Math.max(0, columnTasks.length - 2);
 
                           return (
                             <div
                               key={task._id}
-                              className="px-4 py-3 hover:bg-gray-50/60 transition-colors flex items-center gap-3 text-xs relative"
+                              className="px-4 py-3 hover:bg-gray-50/60 dark:hover:bg-zinc-800/40 transition-colors flex items-center gap-3 text-xs relative"
                             >
                               {/* Task Title Column */}
                               <div
-                                className="flex-1 min-w-[160px] font-medium text-gray-800 truncate cursor-pointer hover:text-indigo-600"
+                                className="flex-1 min-w-[160px] font-medium text-gray-800 dark:text-zinc-200 truncate cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400"
                                 onClick={() => onEdit(task)}
                               >
                                 {task.title}
@@ -240,7 +261,7 @@ export default function TaskBoard({
                                 <div className="w-24 shrink-0 flex items-center gap-1.5">
                                   <div
                                     className={`w-5 h-5 rounded-full ${avatarColor} text-white flex items-center justify-center text-[10px] font-bold shrink-0`}
-                                    title={assigneeName}
+                                    title={formatMemberName(assigneeName)}
                                   >
                                     {initial}
                                   </div>
@@ -249,7 +270,7 @@ export default function TaskBoard({
 
                               {/* Due Date Column */}
                               {fieldVisibility.dueDate && (
-                                <div className="w-32 shrink-0 text-gray-600">
+                                <div className="w-32 shrink-0 text-gray-600 dark:text-zinc-400">
                                   {formatDateShortYear(task.dueDate)}
                                 </div>
                               )}
@@ -257,31 +278,29 @@ export default function TaskBoard({
                               {/* Labels Column */}
                               {fieldVisibility.labels && (
                                 <div className="w-28 shrink-0 flex items-center gap-1 flex-wrap">
-                                  {task.tags && task.tags.length > 0 ? (
-                                    task.tags.map((tag, i) => (
-                                      <span
-                                        key={i}
-                                        className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px]"
-                                      >
-                                        {tag}
-                                      </span>
-                                    ))
-                                  ) : (
-                                    <span className="text-gray-400">—</span>
-                                  )}
+                                  {task.tags && task.tags.length > 0
+                                    ? task.tags.map((tag, i) => (
+                                        <span
+                                          key={i}
+                                          className="bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-300 px-1.5 py-0.5 rounded text-[10px]"
+                                        >
+                                          {tag}
+                                        </span>
+                                      ))
+                                    : null}
                                 </div>
                               )}
 
                               {/* Status Column */}
                               {fieldVisibility.status && (
-                                <div className="w-24 shrink-0 uppercase text-[10px] font-medium text-gray-500">
+                                <div className="w-24 shrink-0 uppercase text-[10px] font-medium text-gray-500 dark:text-zinc-400">
                                   {task.status}
                                 </div>
                               )}
 
                               {/* Reporter Column */}
                               {fieldVisibility.reporter && (
-                                <div className="w-24 shrink-0 text-gray-500">
+                                <div className="w-24 shrink-0 text-gray-500 dark:text-zinc-400">
                                   Admin
                                 </div>
                               )}
@@ -291,7 +310,7 @@ export default function TaskBoard({
                                 <button
                                   type="button"
                                   onClick={(e) => handleOpenMenu(e, task._id)}
-                                  className="p-1 text-gray-400 hover:text-gray-700 rounded transition-colors"
+                                  className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-zinc-200 rounded transition-colors cursor-pointer"
                                   title="Actions"
                                 >
                                   <MoreHorizontal className="w-4 h-4 ml-auto" />
@@ -307,7 +326,7 @@ export default function TaskBoard({
                                       }}
                                     />
                                     <div
-                                      className="fixed bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 w-28 text-xs text-left animate-in fade-in zoom-in-95 duration-100"
+                                      className="fixed bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl shadow-xl z-50 py-1.5 w-28 text-xs text-left animate-in fade-in zoom-in-95 duration-100"
                                       style={{ top: `${menuPos.top}px`, left: `${menuPos.left}px` }}
                                       onClick={(e) => e.stopPropagation()}
                                     >
@@ -318,9 +337,9 @@ export default function TaskBoard({
                                           setMenuPos(null);
                                           onEdit(task);
                                         }}
-                                        className="w-full px-3 py-1.5 text-left text-gray-700 hover:bg-gray-50 flex items-center gap-2 font-medium transition-colors"
+                                        className="w-full px-3 py-1.5 text-left text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center gap-2 font-medium transition-colors cursor-pointer"
                                       >
-                                        <Pencil className="w-3.5 h-3.5 text-gray-500" />
+                                        <Pencil className="w-3.5 h-3.5 text-gray-500 dark:text-zinc-400" />
                                         Edit
                                       </button>
                                       <button
@@ -330,7 +349,7 @@ export default function TaskBoard({
                                           setMenuPos(null);
                                           onDelete(task);
                                         }}
-                                        className="w-full px-3 py-1.5 text-left text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium transition-colors"
+                                        className="w-full px-3 py-1.5 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2 font-medium transition-colors cursor-pointer"
                                       >
                                         <Trash2 className="w-3.5 h-3.5 text-red-500" />
                                         Delete
@@ -348,7 +367,7 @@ export default function TaskBoard({
                     {/* Add Task Button Row at Bottom of Card Box */}
                     <div
                       onClick={() => onAddTask(column.id)}
-                      className="px-4 py-2.5 border-t border-gray-100 hover:bg-gray-50 transition-colors text-xs font-medium text-gray-600 flex items-center gap-1.5 cursor-pointer select-none"
+                      className="px-4 py-2.5 border-t border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors text-xs font-medium text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 cursor-pointer select-none"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       Add Task
@@ -372,14 +391,14 @@ export default function TaskBoard({
           return (
             <div
               key={column.id}
-              className="w-[85vw] max-w-[320px] sm:w-80 bg-[#F4F5F7] rounded-xl border border-gray-200/80 flex flex-col shrink-0 snap-start"
+              className="w-[85vw] max-w-[320px] sm:w-80 bg-[#F4F5F7] dark:bg-[#18181c] rounded-xl border border-gray-200/80 dark:border-zinc-800 flex flex-col shrink-0 snap-start"
               id={`column-${column.id}`}
             >
               {/* Column Header */}
-              <div className="p-3 flex items-center justify-between border-b border-gray-200/50">
+              <div className="p-3 flex items-center justify-between border-b border-gray-200/50 dark:border-zinc-800/80">
                 <div className="flex items-center gap-2">
-                  <GripVertical width={14} />
-                  <span className="text-xs font-semibold text-gray-700">
+                  {/* <GripVertical width={14} /> */}
+                  <span className="text-xs font-semibold text-gray-700 dark:text-zinc-200">
                     {column.title}
                   </span>
                 </div>
@@ -387,18 +406,18 @@ export default function TaskBoard({
                   <button
                     type="button"
                     onClick={() => onAddTask(column.id)}
-                    className="p-1 hover:bg-gray-200 rounded transition-colors"
+                    className="p-1 hover:bg-gray-200 dark:hover:bg-zinc-800 text-gray-400 dark:text-zinc-400 hover:text-gray-600 dark:hover:text-zinc-200 rounded transition-colors cursor-pointer"
                     title={`Add task to ${column.title}`}
                     id={`add-task-${column.id}`}
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
-                  <button
+                  {/* <button
                     type="button"
                     className="p-1 hover:bg-gray-200 rounded transition-colors"
                   >
                     <MoreHorizontal className="w-3.5 h-3.5" />
-                  </button>
+                  </button> */}
                 </div>
               </div>
 
@@ -408,7 +427,7 @@ export default function TaskBoard({
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`p-2.5 space-y-2.5 flex-1 min-h-[120px] transition-colors ${snapshot.isDraggingOver ? 'bg-gray-200/40' : ''
+                    className={`p-2.5 space-y-2.5 flex-1 min-h-[120px] transition-colors ${snapshot.isDraggingOver ? 'bg-gray-200/40 dark:bg-zinc-800/40' : ''
                       }`}
                   >
                     {columnTasks.map((task, index) => (
@@ -427,7 +446,7 @@ export default function TaskBoard({
                     <button
                       type="button"
                       onClick={() => onAddTask(column.id)}
-                      className="w-full py-1.5 text-left text-xs font-medium text-gray-500 hover:text-gray-900 px-2 rounded hover:bg-gray-200/50 transition-colors flex items-center gap-1.5 mt-2"
+                      className="w-full py-1.5 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 px-2 rounded hover:bg-gray-200/50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1.5 mt-2 cursor-pointer"
                       id={`add-task-btn-${column.id}`}
                     >
                       <Plus className="w-3.5 h-3.5" />
