@@ -1,7 +1,7 @@
 import api from './api';
 
 export type TaskStatus = 'todo' | 'doing' | 'in-progress' | 'completed' | 'done' | 'on-hold';
-export type TaskPriority = 'low' | 'medium' | 'high';
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent' | 'no-priority' | 'none';
 
 export interface Task {
   _id: string;
@@ -16,7 +16,7 @@ export interface Task {
   subtasks?: {
     id: string;
     title: string;
-    priority: 'high' | 'medium' | 'low';
+    priority: 'urgent' | 'high' | 'medium' | 'low';
     assignee: string;
     dueDate?: string;
   }[];
@@ -26,6 +26,10 @@ export interface Task {
     url: string;
   }[];
   userId: string;
+  createdBy?: string;
+  creatorName?: string;
+  isLocked?: boolean;
+  workspaceId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -39,10 +43,14 @@ export interface CreateTaskPayload {
   assignee?: string;
   avatarColor?: string;
   tags?: string[];
+  createdBy?: string;
+  creatorName?: string;
+  isLocked?: boolean;
+  workspaceId?: string;
   subtasks?: {
     id: string;
     title: string;
-    priority: 'high' | 'medium' | 'low';
+    priority: 'urgent' | 'high' | 'medium' | 'low';
     assignee: string;
     dueDate?: string;
   }[];
@@ -59,6 +67,7 @@ export interface FilterParams {
   status?: TaskStatus;
   priority?: TaskPriority;
   search?: string;
+  workspaceId?: string;
 }
 
 export interface TaskStats {
@@ -77,12 +86,20 @@ export const tasksService = {
     if (filters?.status) params.append('status', filters.status);
     if (filters?.priority) params.append('priority', filters.priority);
     if (filters?.search) params.append('search', filters.search);
+    const activeWsId = typeof window !== 'undefined' ? localStorage.getItem('followup_active_workspace_id') : undefined;
+    const wsId = filters?.workspaceId || activeWsId;
+    if (wsId) params.append('workspaceId', wsId);
     const response = await api.get(`/tasks?${params.toString()}`);
     return response.data.data;
   },
 
   async create(payload: CreateTaskPayload): Promise<Task> {
-    const response = await api.post('/tasks', payload);
+    const activeWsId = typeof window !== 'undefined' ? localStorage.getItem('followup_active_workspace_id') : undefined;
+    const body = {
+      ...(activeWsId && !payload.workspaceId ? { workspaceId: activeWsId } : {}),
+      ...payload,
+    };
+    const response = await api.post('/tasks', body);
     return response.data.data;
   },
 
@@ -100,8 +117,10 @@ export const tasksService = {
     await api.delete(`/tasks/${id}`);
   },
 
-  async getStats(): Promise<TaskStats> {
-    const response = await api.get('/tasks/stats');
+  async getStats(workspaceId?: string): Promise<TaskStats> {
+    const activeWsId = workspaceId || (typeof window !== 'undefined' ? localStorage.getItem('followup_active_workspace_id') : undefined);
+    const query = activeWsId ? `?workspaceId=${encodeURIComponent(activeWsId)}` : '';
+    const response = await api.get(`/tasks/stats${query}`);
     return response.data.data;
   },
 };
