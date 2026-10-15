@@ -72,7 +72,7 @@ export const socketService = {
     };
   },
 
-  onTaskDeleted(callback: (data: { id: string; userId?: string }) => void) {
+  onTaskDeleted(callback: (data: { id: string; userId?: string; workspaceId?: string }) => void) {
     const s = getSocket();
     s.on('task:deleted', callback);
     return () => {
