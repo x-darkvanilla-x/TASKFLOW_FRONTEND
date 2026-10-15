@@ -174,9 +174,11 @@ export default function TaskModal({
                   value={priority}
                   onChange={(e) => setPriority(e.target.value as TaskPriority)}
                 >
-                  <option value="low">○ Low</option>
-                  <option value="medium">◐ Medium</option>
+                  <option value="no-priority">. No Priority</option>
+                  <option value="urgent">▲ Urgent</option>
                   <option value="high">● High</option>
+                  <option value="medium">◐ Medium</option>
+                  <option value="low">○ Low</option>
                 </select>
               </div>
             </div>
