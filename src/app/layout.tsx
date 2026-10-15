@@ -4,10 +4,10 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
 
 export const metadata: Metadata = {
-  title: 'TaskFlow — Task Management System',
+  title: 'Follow Up — Task Management System',
   description:
     'A production-grade, responsive task management system with Kanban board, guest authentication, and real-time task tracking.',
-  keywords: 'task management, kanban, productivity, project management',
+  keywords: 'follow up, task management, kanban, productivity, project management',
 };
 
 export default function RootLayout({

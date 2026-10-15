@@ -1,4 +1,4 @@
-# Task Management System - Next.js Frontend
+# Follow Up - Next.js Frontend
 
 A high-performance, pixel-perfect, fully responsive web application built with **Next.js 16 (App Router)**, **React 19**, **TypeScript**, and **Tailwind CSS v4**. It features an interactive drag-and-drop Kanban board, comprehensive task management modals, theme toggle, subtask workflows, and real-time backend synchronization.
 

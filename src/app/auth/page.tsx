@@ -27,7 +27,7 @@ export default function AuthLandingPage() {
         <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white">
           <Triangle className="w-4 h-4 fill-white text-white" />
         </div>
-        <span className="font-semibold text-lg tracking-tight text-black">Pyramid</span>
+        <span className="font-semibold text-lg tracking-tight text-black">Follow Up</span>
       </div>
 
       {/* Main Card */}

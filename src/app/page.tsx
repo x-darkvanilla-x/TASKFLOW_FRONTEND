@@ -21,7 +21,7 @@ export default function RootPage() {
   return (
     <div className="loading-page">
       <div className="spinner" />
-      <span>Loading TaskFlow...</span>
+      <span>Loading Follow Up...</span>
     </div>
   );
 }

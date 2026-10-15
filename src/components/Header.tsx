@@ -40,7 +40,7 @@ interface HeaderProps {
 export default function Header({ onMenuClick }: HeaderProps) {
   return (
     <header className="h-16 bg-white border-b border-gray-200 px-4 sm:px-6 flex items-center justify-between shrink-0 relative z-20">
-      {/* Left Header Toggle */}
+      {/* Left Header Toggle & Brand */}
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
@@ -51,6 +51,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
           <Menu className="w-5 h-5 text-gray-800 md:hidden" />
           <PanelLeft className="w-4.5 h-4.5 text-gray-600 hidden md:block" />
         </button>
+        <span className="font-bold text-sm tracking-tight text-gray-900 select-none">
+          Follow Up
+        </span>
       </div>
     </header>
   );

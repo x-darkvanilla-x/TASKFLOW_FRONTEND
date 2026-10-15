@@ -66,7 +66,7 @@ export default function SignupPage() {
         <div className="w-9 h-9 bg-black rounded-xl flex items-center justify-center text-white shadow-xs">
           <Triangle className="w-4.5 h-4.5 fill-white text-white" />
         </div>
-        <span className="font-bold text-xl tracking-tight text-gray-900">Pyramid</span>
+        <span className="font-bold text-xl tracking-tight text-gray-900">Follow Up</span>
       </div>
 
       {/* Main Card Container */}
@@ -92,7 +92,7 @@ export default function SignupPage() {
           Create your account
         </h1>
         <p className="text-xs text-gray-500 mb-6 text-center">
-          Join Pyramid to save and manage all your tasks and projects.
+          Join Follow Up to save and manage all your tasks and projects.
         </p>
 
         {/* Error Alert */}
