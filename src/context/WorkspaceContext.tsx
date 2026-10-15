@@ -151,8 +151,6 @@ export const WorkspaceProvider = ({ children }: { children: React.ReactNode }) =
     } catch (e) {
       console.error('Error loading workspaces from storage', e);
     }
-
-    refreshWorkspaces();
   }, []);
 
   const currentWorkspace =

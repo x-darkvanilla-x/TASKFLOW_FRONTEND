@@ -76,7 +76,21 @@ export default function ServerHealthGate({ children }: { children: React.ReactNo
   const [timeElapsed, setTimeElapsed] = useState(0);
 
   const mountedRef = useRef(true);
+  const isConnectedRef = useRef(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Check if server was already verified in this browser session
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const alreadyVerified = sessionStorage.getItem('server_health_checked');
+      if (alreadyVerified === 'true') {
+        isConnectedRef.current = true;
+        setIsConnected(true);
+        setIsGateOpen(true);
+        setFadeState('hidden');
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (isConnected) return;
@@ -106,7 +120,12 @@ export default function ServerHealthGate({ children }: { children: React.ReactNo
     if (!mountedRef.current) return;
 
     setCurrentStage('connected');
+    isConnectedRef.current = true;
     setIsConnected(true);
+
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('server_health_checked', 'true');
+    }
 
     await new Promise((res) => setTimeout(res, 600));
     if (!mountedRef.current) return;
@@ -120,6 +139,8 @@ export default function ServerHealthGate({ children }: { children: React.ReactNo
   }, []);
 
   const runHealthCheck = useCallback(async () => {
+    if (isConnectedRef.current) return;
+
     setIsRetrying(true);
     const result = await healthService.checkHealth(4000);
 
@@ -141,12 +162,12 @@ export default function ServerHealthGate({ children }: { children: React.ReactNo
 
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
-        if (mountedRef.current && !isConnected) {
+        if (mountedRef.current && !isConnectedRef.current) {
           runHealthCheck();
         }
       }, 2000);
     }
-  }, [completeConnectionSequence, isConnected]);
+  }, [completeConnectionSequence]);
 
   useEffect(() => {
     mountedRef.current = true;

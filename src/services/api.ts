@@ -37,7 +37,10 @@ api.interceptors.response.use(
       if (typeof window !== 'undefined') {
         localStorage.removeItem('taskmanager_token');
         localStorage.removeItem('taskmanager_user');
-        window.location.href = '/auth';
+        // Only redirect if not already on an authentication route to avoid reload loops
+        if (!window.location.pathname.startsWith('/auth')) {
+          window.location.href = '/auth';
+        }
       }
     }
     return Promise.reject(error);
