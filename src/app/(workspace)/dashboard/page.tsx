@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { DropResult } from '@hello-pangea/dnd';
 import { useAuth } from '@/context/AuthContext';
-import Sidebar from '@/components/Sidebar';
-import Header, { HeaderActions, FieldVisibility, ViewMode } from '@/components/Header';
+import { useWorkspace } from '@/context/WorkspaceContext';
+import { HeaderActions, FieldVisibility, ViewMode } from '@/components/Header';
 import TaskBoard from '@/components/TaskBoard';
 import TaskModal from '@/components/TaskModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import Toast, { ToastMessage } from '@/components/Toast';
+import WorkspaceIcon from '@/components/WorkspaceIcon';
 import {
   tasksService,
   Task,
@@ -19,30 +20,14 @@ import {
   FilterParams,
   TaskStats,
 } from '@/services/tasks.service';
+import socketService from '@/services/socket.service';
 
 export default function DashboardPage() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
+  const { currentWorkspace } = useWorkspace();
   const router = useRouter();
 
-  // UI State
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  useEffect(() => {
-    let isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
-    setSidebarOpen(isDesktop);
-
-    const handleResize = () => {
-      if (typeof window !== 'undefined') {
-        const currentIsDesktop = window.innerWidth >= 768;
-        if (currentIsDesktop !== isDesktop) {
-          isDesktop = currentIsDesktop;
-          setSidebarOpen(currentIsDesktop);
-        }
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   // Data State
@@ -102,17 +87,18 @@ export default function DashboardPage() {
   }, []);
 
   // Fetch tasks + stats strictly from Backend API
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (targetWsId?: string) => {
     setIsLoadingTasks(true);
     try {
-      const filters: FilterParams = {};
+      const activeWsId = targetWsId || currentWorkspace?.id || (typeof window !== 'undefined' ? localStorage.getItem('followup_active_workspace_id') : undefined) || undefined;
+      const filters: FilterParams = { workspaceId: activeWsId };
       if (filterStatus) filters.status = filterStatus;
       if (filterPriority) filters.priority = filterPriority;
       if (search.trim()) filters.search = search.trim();
 
       const [tasksData, statsData] = await Promise.all([
         tasksService.getAll(filters),
-        tasksService.getStats(),
+        tasksService.getStats(activeWsId),
       ]);
 
       setTasks(tasksData || []);
@@ -123,14 +109,82 @@ export default function DashboardPage() {
     } finally {
       setIsLoadingTasks(false);
     }
-  }, [filterStatus, filterPriority, search, addToast]);
+  }, [filterStatus, filterPriority, search, addToast, currentWorkspace?.id, currentWorkspace?.ownerId]);
 
   useEffect(() => {
     if (isAuthenticated) {
       const debounce = setTimeout(fetchData, search ? 400 : 0);
       return () => clearTimeout(debounce);
     }
-  }, [isAuthenticated, fetchData, search]);
+  }, [isAuthenticated, fetchData, search, currentWorkspace?.id, currentWorkspace?.ownerId]);
+
+  // Listen to workspace switch event to immediately refresh tasks
+  useEffect(() => {
+    const handleWorkspaceSwitched = (e: any) => {
+      const switchedWsId = e?.detail?.workspaceId || (typeof window !== 'undefined' ? localStorage.getItem('followup_active_workspace_id') : undefined);
+      fetchData(switchedWsId);
+    };
+    window.addEventListener('workspace-switched', handleWorkspaceSwitched);
+    return () => {
+      window.removeEventListener('workspace-switched', handleWorkspaceSwitched);
+    };
+  }, [fetchData]);
+
+  // Real-time Socket.IO synchronization for tasks
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    if (currentWorkspace?.id) {
+      socketService.joinWorkspace(currentWorkspace.id);
+    }
+
+    const isMatchingWorkspace = (taskWsId?: string) => {
+      if (!currentWorkspace?.id) return true;
+      if (!taskWsId) return true;
+      return taskWsId === currentWorkspace.id || (currentWorkspace.id === 'ws-default' && !taskWsId);
+    };
+
+    const unsubCreated = socketService.onTaskCreated((task) => {
+      const activeOwnerId = currentWorkspace?.ownerId || user?.id;
+      if ((!task.userId || task.userId === activeOwnerId) && isMatchingWorkspace(task.workspaceId)) {
+        setTasks((prev) => {
+          if (prev.some((t) => t._id === task._id)) return prev;
+          return [task, ...prev];
+        });
+        tasksService.getStats(currentWorkspace?.id).then(setStats).catch(() => {});
+      }
+    });
+
+    const unsubUpdated = socketService.onTaskUpdated((task) => {
+      const activeOwnerId = currentWorkspace?.ownerId || user?.id;
+      if ((!task.userId || task.userId === activeOwnerId) && isMatchingWorkspace(task.workspaceId)) {
+        setTasks((prev) => {
+          const exists = prev.some((t) => t._id === task._id);
+          if (exists) {
+            return prev.map((t) => (t._id === task._id ? { ...t, ...task } : t));
+          }
+          return [task, ...prev];
+        });
+        tasksService.getStats(currentWorkspace?.id).then(setStats).catch(() => {});
+      }
+    });
+
+    const unsubDeleted = socketService.onTaskDeleted((data) => {
+      if (!data.workspaceId || isMatchingWorkspace(data.workspaceId)) {
+        setTasks((prev) => prev.filter((t) => t._id !== data.id));
+        tasksService.getStats(currentWorkspace?.id).then(setStats).catch(() => {});
+      }
+    });
+
+    return () => {
+      unsubCreated();
+      unsubUpdated();
+      unsubDeleted();
+      if (currentWorkspace?.id) {
+        socketService.leaveWorkspace(currentWorkspace.id);
+      }
+    };
+  }, [isAuthenticated, currentWorkspace?.id, currentWorkspace?.ownerId, user?.id]);
 
   // Handlers
   const handleOpenNewTask = (status: TaskStatus = 'todo') => {
@@ -165,10 +219,10 @@ export default function DashboardPage() {
             status: payload.status || 'todo',
             priority: payload.priority || 'medium',
             dueDate: payload.dueDate,
-            assignee: 'Admin',
+            assignee: payload.assignee || user?.name || 'Unassigned',
             avatarColor: 'bg-indigo-600',
-            tags: ['Deployment'],
-            userId: 'user-1',
+            tags: payload.tags || [],
+            userId: user?.id || 'user-1',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           };
@@ -222,7 +276,7 @@ export default function DashboardPage() {
     if (!draggableId.startsWith('mock-')) {
       try {
         await tasksService.update(draggableId, { status: newStatus });
-        const updatedStats = await tasksService.getStats();
+        const updatedStats = await tasksService.getStats(currentWorkspace?.id);
         setStats(updatedStats);
       } catch (err: any) {
         // Revert optimistic state update on failure
@@ -236,8 +290,8 @@ export default function DashboardPage() {
 
   if (authLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#F9FAFB]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+      <div className="flex h-screen items-center justify-center bg-[#F9FAFB] dark:bg-[#121215]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white" />
       </div>
     );
   }
@@ -245,73 +299,68 @@ export default function DashboardPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="flex bg-white h-screen text-gray-900 font-sans overflow-hidden">
-      {/* Sidebar Navigation */}
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        stats={stats}
-      />
-
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        {/* Header Bar */}
-        <Header onMenuClick={() => setSidebarOpen((o) => !o)} />
-
-        {/* Dashboard Workspace View (Kanban Board) */}
-        <div className="flex-1 p-3 sm:p-6 bg-white flex flex-col min-h-0 overflow-auto scrollbar-hidden">
-          {/* Board View Title & Action Buttons */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
-            <h1 className="text-lg font-bold text-gray-900">Tasks</h1>
-            <HeaderActions
-              searchValue={search}
-              onSearchChange={setSearch}
-              onNewTask={() => handleOpenNewTask()}
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-              fieldVisibility={fieldVisibility}
-              onToggleField={handleToggleField}
-              filterStatus={filterStatus}
-              onFilterStatusChange={setFilterStatus}
-              filterPriority={filterPriority}
-              onFilterPriorityChange={setFilterPriority}
-              filterAssignee={filterAssignee}
-              onFilterAssigneeChange={setFilterAssignee}
-              filterTag={filterTag}
-              onFilterTagChange={setFilterTag}
-              membersList={Array.from(
-                new Set(['Admin', ...tasks.map((t) => t.assignee).filter(Boolean)])
-              ) as string[]}
-              tagsList={Array.from(
-                new Set(['Deployment', ...tasks.flatMap((t) => t.tags || []).filter(Boolean)])
-              ) as string[]}
-            />
-          </div>
-
-          {/* Kanban Columns Container */}
-          {isLoadingTasks ? (
-            <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-              Loading tasks...
-            </div>
-          ) : (
-            <div className="flex-1 min-h-0">
-              <TaskBoard
-                tasks={tasks.filter((t) => {
-                  if (filterAssignee && t.assignee !== filterAssignee) return false;
-                  if (filterTag && (!t.tags || !t.tags.includes(filterTag))) return false;
-                  return true;
-                })}
-                onEdit={handleEditTask}
-                onDelete={(task) => setDeletingTask(task)}
-                onAddTask={handleOpenNewTask}
-                onDragEnd={handleDragEnd}
-                viewMode={viewMode}
-                fieldVisibility={fieldVisibility}
-              />
-            </div>
-          )}
+    <div className="flex-1 p-3 sm:p-6 bg-white dark:bg-[#121215] text-gray-900 dark:text-gray-100 flex flex-col min-h-0 overflow-auto scrollbar-hidden transition-colors">
+      {/* Board View Title & Action Buttons */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <h1 className="text-lg font-bold text-gray-900 dark:text-white">Tasks</h1>
+          {/* <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gray-100 border border-gray-200/60 text-xs font-semibold text-gray-700 shadow-2xs">
+                <div
+                  className="w-3.5 h-3.5 rounded-xs flex items-center justify-center text-white shrink-0"
+                  style={{ backgroundColor: currentWorkspace?.color || '#4F46E5' }}
+                >
+                  <WorkspaceIcon name={currentWorkspace?.icon} className="w-2.5 h-2.5 text-white stroke-[2.2]" />
+                </div>
+                <span>{currentWorkspace?.name || 'Workspace'}</span>
+              </div> */}
         </div>
-      </main>
+        <HeaderActions
+          searchValue={search}
+          onSearchChange={setSearch}
+          onNewTask={() => handleOpenNewTask()}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          fieldVisibility={fieldVisibility}
+          onToggleField={handleToggleField}
+          filterStatus={filterStatus}
+          onFilterStatusChange={setFilterStatus}
+          filterPriority={filterPriority}
+          onFilterPriorityChange={setFilterPriority}
+          filterAssignee={filterAssignee}
+          onFilterAssigneeChange={setFilterAssignee}
+          filterTag={filterTag}
+          onFilterTagChange={setFilterTag}
+          membersList={Array.from(
+            new Set(tasks.map((t) => t.assignee).filter(Boolean))
+          ) as string[]}
+          tagsList={Array.from(
+            new Set(tasks.flatMap((t) => t.tags || []).filter(Boolean))
+          ) as string[]}
+        />
+      </div>
+
+      {/* Kanban Columns Container */}
+      {isLoadingTasks ? (
+        <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
+          Loading tasks...
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0">
+          <TaskBoard
+            tasks={tasks.filter((t) => {
+              if (filterAssignee && t.assignee !== filterAssignee) return false;
+              if (filterTag && (!t.tags || !t.tags.includes(filterTag))) return false;
+              return true;
+            })}
+            onEdit={handleEditTask}
+            onDelete={(task) => setDeletingTask(task)}
+            onAddTask={handleOpenNewTask}
+            onDragEnd={handleDragEnd}
+            viewMode={viewMode}
+            fieldVisibility={fieldVisibility}
+          />
+        </div>
+      )}
 
       {/* Task Create/Edit Modal */}
       {taskModalOpen && (

@@ -19,9 +19,8 @@ export default function RootPage() {
   }, [isAuthenticated, isLoading, router]);
 
   return (
-    <div className="loading-page">
-      <div className="spinner" />
-      <span>Loading Follow Up...</span>
+    <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center gap-3">
+      <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
     </div>
   );
 }

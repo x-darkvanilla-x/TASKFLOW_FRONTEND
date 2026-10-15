@@ -2,9 +2,12 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { WorkspaceProvider } from '@/context/WorkspaceContext';
+import { NotificationProvider } from '@/context/NotificationContext';
+import ServerHealthGate from '@/components/ServerHealthGate';
 
 export const metadata: Metadata = {
-  title: 'Follow Up — Task Management System',
+  title: 'Follow Up | Task Management System',
   description:
     'A production-grade, responsive task management system with Kanban board, guest authentication, and real-time task tracking.',
   keywords: 'follow up, task management, kanban, productivity, project management',
@@ -27,7 +30,13 @@ export default function RootLayout({
       </head>
       <body>
         <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <ServerHealthGate>
+            <AuthProvider>
+              <WorkspaceProvider>
+                <NotificationProvider>{children}</NotificationProvider>
+              </WorkspaceProvider>
+            </AuthProvider>
+          </ServerHealthGate>
         </ThemeProvider>
       </body>
     </html>

@@ -4,32 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Pencil, Check } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import Sidebar from '@/components/Sidebar';
-import Header from '@/components/Header';
 import Toast, { ToastMessage } from '@/components/Toast';
 
 export default function ProfilePage() {
   const { user, logout, updateUser, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  useEffect(() => {
-    let isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
-    setSidebarOpen(isDesktop);
-
-    const handleResize = () => {
-      if (typeof window !== 'undefined') {
-        const currentIsDesktop = window.innerWidth >= 768;
-        if (currentIsDesktop !== isDesktop) {
-          isDesktop = currentIsDesktop;
-          setSidebarOpen(currentIsDesktop);
-        }
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -111,33 +92,23 @@ export default function ProfilePage() {
   const initial = (fullName || 'Dexter').charAt(0).toUpperCase();
 
   return (
-    <div className="flex h-screen bg-[#F9FAFB] text-gray-900 font-sans overflow-hidden">
+    <div className="flex-1 p-4 sm:p-8 bg-[#FAFAFA] dark:bg-[#121215] text-gray-900 dark:text-gray-100 overflow-y-auto">
       {/* Toast Notification Container */}
       <div className="fixed top-4 right-4 z-50">
         <Toast toasts={toasts} onDismiss={dismissToast} />
       </div>
 
-      {/* Sidebar Navigation */}
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto overflow-x-auto">
-        {/* Top Navigation Header Bar */}
-        <Header onMenuClick={() => setSidebarOpen((o) => !o)} />
-
-        {/* Profile Content Container */}
-        <div className="flex-1 p-4 sm:p-8 bg-[#FAFAFA]">
-          <div className="max-w-3xl mx-auto space-y-6 sm:space-y-8">
+      <div className="max-w-3xl mx-auto space-y-6 sm:space-y-8">
             {/* Title */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
                 Profile
               </h1>
               <button
                 type="button"
                 onClick={handleSaveProfile}
                 disabled={isSaving}
-                className="px-4 py-2 bg-gray-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto"
+                className="px-4 py-2 bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto"
               >
                 <Check className="w-3.5 h-3.5" />
                 {isSaving ? 'Saving...' : 'Save Changes'}
@@ -145,10 +116,10 @@ export default function ProfilePage() {
             </div>
 
             {/* Profile Settings Card */}
-            <div className="bg-white border border-gray-200/80 rounded-2xl p-4 sm:p-8 shadow-xs space-y-5 sm:space-y-6">
+            <div className="bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-2xl p-4 sm:p-8 shadow-xs space-y-5 sm:space-y-6">
               {/* Row 1: Profile picture */}
-              <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                <span className="text-xs font-semibold text-gray-700">
+              <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-zinc-800">
+                <span className="text-xs font-semibold text-gray-700 dark:text-zinc-300">
                   Profile picture
                 </span>
                 <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 text-white flex items-center justify-center text-xs font-bold shadow-xs cursor-pointer hover:opacity-90 transition-opacity">
@@ -157,8 +128,8 @@ export default function ProfilePage() {
               </div>
 
               {/* Row 2: Email */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2 border-b border-gray-100">
-                <span className="text-xs font-semibold text-gray-700">Email</span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2 border-b border-gray-100 dark:border-zinc-800">
+                <span className="text-xs font-semibold text-gray-700 dark:text-zinc-300">Email</span>
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   {isEditingEmail ? (
                     <input
@@ -170,16 +141,16 @@ export default function ProfilePage() {
                           setIsEditingEmail(false);
                         }
                       }}
-                      className="bg-gray-100 text-gray-800 text-xs px-3 py-1.5 rounded-lg outline-none border border-gray-300 focus:bg-white flex-1 sm:w-64"
+                      className="bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-zinc-200 text-xs px-3 py-1.5 rounded-lg outline-none border border-gray-300 dark:border-zinc-700 focus:bg-white dark:focus:bg-zinc-900 flex-1 sm:w-64"
                       autoFocus
                     />
                   ) : (
-                    <span className="text-xs text-gray-700 font-medium truncate">{email}</span>
+                    <span className="text-xs text-gray-700 dark:text-zinc-300 font-medium truncate">{email}</span>
                   )}
                   <button
                     type="button"
                     onClick={() => setIsEditingEmail((prev) => !prev)}
-                    className="p-1 text-gray-400 hover:text-gray-700 transition-colors shrink-0"
+                    className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-zinc-200 transition-colors shrink-0"
                     title="Edit Email"
                   >
                     <Pencil className="w-3.5 h-3.5" />
@@ -188,23 +159,23 @@ export default function ProfilePage() {
               </div>
 
               {/* Row 3: Full name */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2 border-b border-gray-100">
-                <span className="text-xs font-semibold text-gray-700">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2 border-b border-gray-100 dark:border-zinc-800">
+                <span className="text-xs font-semibold text-gray-700 dark:text-zinc-300">
                   Full name
                 </span>
                 <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="bg-[#F3F4F6] text-gray-800 text-xs px-4 py-2.5 rounded-xl w-full sm:w-64 outline-none border border-transparent focus:border-gray-300 focus:bg-white transition-all font-medium"
+                  className="bg-[#F3F4F6] dark:bg-zinc-800/80 text-gray-800 dark:text-zinc-200 text-xs px-4 py-2.5 rounded-xl w-full sm:w-64 outline-none border border-transparent dark:border-zinc-700/60 focus:border-gray-300 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-900 transition-all font-medium"
                 />
               </div>
 
               {/* Row 4: Title */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2 border-b border-gray-100">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2 border-b border-gray-100 dark:border-zinc-800">
                 <div>
-                  <div className="text-xs font-semibold text-gray-700">Title</div>
-                  <div className="text-[11px] text-gray-400 mt-0.5">
+                  <div className="text-xs font-semibold text-gray-700 dark:text-zinc-300">Title</div>
+                  <div className="text-[11px] text-gray-400 dark:text-zinc-500 mt-0.5">
                     Your job title or role
                   </div>
                 </div>
@@ -212,17 +183,17 @@ export default function ProfilePage() {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="bg-[#F3F4F6] text-gray-800 text-xs px-4 py-2.5 rounded-xl w-full sm:w-64 outline-none border border-transparent focus:border-gray-300 focus:bg-white transition-all font-medium"
+                  className="bg-[#F3F4F6] dark:bg-zinc-800/80 text-gray-800 dark:text-zinc-200 text-xs px-4 py-2.5 rounded-xl w-full sm:w-64 outline-none border border-transparent dark:border-zinc-700/60 focus:border-gray-300 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-900 transition-all font-medium"
                 />
               </div>
 
               {/* Row 5: Username */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2">
                 <div>
-                  <div className="text-xs font-semibold text-gray-700">
+                  <div className="text-xs font-semibold text-gray-700 dark:text-zinc-300">
                     Username
                   </div>
-                  <div className="text-[11px] text-gray-400 mt-0.5">
+                  <div className="text-[11px] text-gray-400 dark:text-zinc-500 mt-0.5">
                     One word, like a nickname or first name
                   </div>
                 </div>
@@ -230,17 +201,17 @@ export default function ProfilePage() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="bg-[#F3F4F6] text-gray-800 text-xs px-4 py-2.5 rounded-xl w-full sm:w-64 outline-none border border-transparent focus:border-gray-300 focus:bg-white transition-all font-medium"
+                  className="bg-[#F3F4F6] dark:bg-zinc-800/80 text-gray-800 dark:text-zinc-200 text-xs px-4 py-2.5 rounded-xl w-full sm:w-64 outline-none border border-transparent dark:border-zinc-700/60 focus:border-gray-300 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-900 transition-all font-medium"
                 />
               </div>
 
               {/* Save Button Row */}
-              <div className="pt-4 border-t border-gray-100 flex justify-end">
+              <div className="pt-4 border-t border-gray-100 dark:border-zinc-800 flex justify-end">
                 <button
                   type="button"
                   onClick={handleSaveProfile}
                   disabled={isSaving}
-                  className="w-full sm:w-auto px-5 py-2.5 bg-gray-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-2.5 bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
                 >
                   {isSaving ? 'Saving...' : 'Save Profile Changes'}
                 </button>
@@ -249,17 +220,17 @@ export default function ProfilePage() {
 
             {/* Workspace Access Section */}
             <div>
-              <h2 className="text-lg font-bold text-gray-900 mb-4">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
                 Workspace access
               </h2>
-              <div className="bg-white border border-gray-200/80 rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <span className="text-xs text-gray-400 font-medium">
+              <div className="bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <span className="text-xs text-gray-400 dark:text-zinc-500 font-medium">
                   Remove yourself from the workspace
                 </span>
                 <button
                   type="button"
                   onClick={handleLeaveWorkspace}
-                  className="w-full sm:w-auto bg-[#FEE2E2] text-[#EF4444] hover:bg-red-200 px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  className="w-full sm:w-auto bg-[#FEE2E2] dark:bg-red-950/40 text-[#EF4444] dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer border border-transparent dark:border-red-900/50"
                 >
                   Leave Workspace
                 </button>
@@ -267,7 +238,5 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
-  );
-}
+    );
+  }
